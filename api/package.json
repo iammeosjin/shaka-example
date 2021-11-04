@@ -1,0 +1,37 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "npm run clean && tsc --project tsconfig.build.json",
+    "clean": "rimraf dist/",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix --cache",
+    "rebuild": "rimraf tmp/output/ tmp/segments/ tmp/converted/ tmp/input/ && mkdir \"tmp/output\"  \"tmp/segments\" \"tmp/converted\" \"tmp/input\"",
+    "start": "node dist/index.js",
+    "start:local": "npm run rebuild && cross-env TS_NODE_PROJECT=tsconfig.json TS_NODE_FILES=true ts-node ./src/index.ts",
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/bluebird": "^3.5.36",
+    "@types/node": "^16.11.6",
+    "@typescript-eslint/eslint-plugin": "^4.28.3",
+    "@typescript-eslint/parser": "^4.28.3",
+    "cross-env": "^7.0.3",
+    "eslint": "^7.31.0",
+    "eslint-config-airbnb-typescript": "^12.3.1",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-import-resolver-typescript": "^2.4.0",
+    "eslint-plugin-import": "^2.23.4",
+    "eslint-plugin-jsx-a11y": "^6.4.1",
+    "eslint-plugin-prettier": "^3.4.0",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.4.4"
+  },
+  "dependencies": {
+    "bluebird": "^3.7.2"
+  }
+}

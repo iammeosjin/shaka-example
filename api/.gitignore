@@ -1,0 +1,11 @@
+dist/
+node_modules/
+projection/
+notes.md
+.eslintcache
+.do
+.data/
+bin/.data
+bin/.data
+.data/
+tmp/
