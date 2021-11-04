@@ -8,16 +8,19 @@
     "clean": "rimraf dist/",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix --cache",
-    "rebuild": "rimraf tmp/output/ tmp/segments/ tmp/converted/ tmp/input/ && mkdir \"tmp/output\"  \"tmp/segments\" \"tmp/converted\" \"tmp/input\"",
+    "rebuild": "rimraf tmp/output/ tmp/segments/ tmp/converted-videos/ tmp/merged-videos/ && mkdir \"tmp/output\"  \"tmp/segments\" \"tmp/converted-videos\" \"tmp/merged-videos\"",
     "start": "node dist/index.js",
     "start:local": "npm run rebuild && cross-env TS_NODE_PROJECT=tsconfig.json TS_NODE_FILES=true ts-node ./src/index.ts",
-    "typecheck": "tsc --project tsconfig.json --noEmit"
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "npm run rebuild && cross-env TS_NODE_PROJECT=tsconfig.json TS_NODE_FILES=true ts-node ./src/test.ts"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@types/bluebird": "^3.5.36",
+    "@types/graphql-upload": "^8.0.7",
     "@types/node": "^16.11.6",
+    "@types/ramda": "^0.27.46",
     "@typescript-eslint/eslint-plugin": "^4.28.3",
     "@typescript-eslint/parser": "^4.28.3",
     "cross-env": "^7.0.3",
@@ -32,6 +35,14 @@
     "typescript": "^4.4.4"
   },
   "dependencies": {
-    "bluebird": "^3.7.2"
+    "@graphql-tools/load-files": "^6.5.2",
+    "@graphql-tools/merge": "^8.2.1",
+    "@koa/cors": "^3.1.0",
+    "apollo-server-koa": "^3.4.0",
+    "bluebird": "^3.7.2",
+    "graphql-upload": "^12.0.0",
+    "koa": "^2.13.4",
+    "koa-bodyparser": "^4.3.0",
+    "ramda": "^0.27.1"
   }
 }
