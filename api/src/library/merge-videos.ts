@@ -10,7 +10,7 @@ export default async function mergeVideos(inputPath: string) {
   console.time('concat-video');
   const output = path.resolve(mergedVideosPath, 'input.mp4');
   const files = await readdir(inputPath);
-  const content = files.map((file) => `file 'converted\\${file}'`).join('\n');
+  const content = files.map((file) => `file '${path.resolve(inputPath, file)}'`).join('\n');
   await writeFile(path.resolve(rootPath, 'segment.txt'), content, 'utf-8');
 
   await execFile(

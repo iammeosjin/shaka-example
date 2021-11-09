@@ -14,9 +14,9 @@ export default async function splitVideo(input: string) {
       '-f',
       'segment',
       '-segment_time',
-      '10',
+      '60',
       '-g',
-      '10',
+      '60',
       path.resolve(segmentsPath, '%03d.mp4'),
     ],
   );

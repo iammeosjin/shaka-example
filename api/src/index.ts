@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import cors from '@koa/cors';
+import { ApolloServerPluginLandingPageGraphQLPlayground } from 'apollo-server-core';
 import { graphqlUploadKoa } from 'graphql-upload';
 import { ApolloServer } from 'apollo-server-koa';
 import { makeExecutableSchema } from '@graphql-tools/schema';
@@ -10,11 +11,16 @@ import bodyParser from 'koa-bodyparser';
 import path from 'path';
 import R from 'ramda';
 import { createServer, Server } from 'http';
+import FileModel from './models/file';
+import * as mongoose from './library/mongoose';
+import routes from './routes';
+import loaders from './loaders';
 
 let apollo: ApolloServer;
 let server: Server;
 
 async function start() {
+  await mongoose.start();
   const app = new Koa();
   app.use(
     bodyParser({
@@ -32,6 +38,23 @@ async function start() {
   app.use(graphqlUploadKoa({
     maxFileSize: 1e9,
   }));
+
+  app.use(async (ctx, next) => {
+    Object.assign(ctx, {
+      models: {
+        file: FileModel,
+      },
+      config: {
+        bucket: process.env.BUCKET || 'D:\\Downloads\\Projects\\demo\\demo-experiment\\api\\tmp\\bucket',
+      },
+      loaders: loaders(ctx as never),
+    });
+
+    await next();
+  });
+
+  app.use(routes.routes());
+  app.use(routes.allowedMethods());
 
   const files = loadFilesSync(path.join(__dirname, './type-defs'), {
     recursive: true,
@@ -51,17 +74,22 @@ async function start() {
   apollo = new ApolloServer({
     schema,
     context: ({ ctx, connection }) => Object.assign(ctx || {}, R.prop('context')(connection) || {}),
-    debug: true,
     introspection: true,
+    debug: true,
+    plugins: [
+      ApolloServerPluginLandingPageGraphQLPlayground({
+        title: 'Demo',
+      }),
+    ],
   });
 
   await apollo.start();
 
   apollo.applyMiddleware({ app });
-
+  const port = process.env.HTTP_PORT || '3001';
   server = createServer(app.callback());
-  server.listen('8001');
-  console.log('started');
+  server.listen(port);
+  console.log('started at', apollo.graphqlPath, '-', port);
 }
 
 async function stop() {
@@ -72,6 +100,7 @@ async function stop() {
   if (server) {
     server.close();
   }
+  await mongoose.stop();
 }
 
 start().catch((error) => {

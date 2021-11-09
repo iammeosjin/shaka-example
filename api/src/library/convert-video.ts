@@ -1,10 +1,10 @@
 /* eslint-disable no-console */
 import path from 'path';
-import { binPath, convertedPath, execFile } from './constants';
+import { binPath, convertedVideosPath, execFile } from './constants';
 
-export default async function convertVideo(input: string) {
+export default async function convertVideo(input: string, outputPath?: string) {
   const name = path.basename(input);
-  const output = path.resolve(convertedPath, name);
+  const output = path.resolve(outputPath || convertedVideosPath, name);
   console.time(`convert-video-${name}`);
   await execFile(
     path.resolve(binPath, './ffmpeg'),
@@ -36,5 +36,27 @@ export default async function convertVideo(input: string) {
     ],
   );
   console.timeEnd(`convert-video-${name}`);
-  return output;
+  return outputPath || output;
 }
+/*
+[
+      '-i',
+      input,
+      '-vf',
+      'scale=-2:360,format=yuv420p',
+      '-c:v',
+      'libx264',
+      '-crf',
+      '23',
+      '-preset',
+      'medium',
+      '-c:a',
+      'aac',
+      '-b:a',
+      '128k',
+      '-movflags',
+      '+faststart',
+      '-y',
+      output,
+    ]
+*/
