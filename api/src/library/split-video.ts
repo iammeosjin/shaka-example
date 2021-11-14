@@ -1,9 +1,17 @@
 /* eslint-disable no-console */
 import path from 'path';
 import { binPath, execFile, segmentsPath } from './constants';
+import createFolder from './create-folder';
 
-export default async function splitVideo(input: string) {
-  console.time('segment-video');
+export default async function splitVideo(args: {
+  input: string, id?: string, size?: number
+}) {
+  const { input, id, size } = args;
+  const limit = size || 60;
+  const outputPath = id ? path.resolve(segmentsPath, id) : segmentsPath;
+  await createFolder(outputPath);
+  const tag = `segment-video-${id || '1'}`;
+  console.time(tag);
   await execFile(
     path.resolve(binPath, './ffmpeg'),
     [
@@ -14,12 +22,12 @@ export default async function splitVideo(input: string) {
       '-f',
       'segment',
       '-segment_time',
-      '60',
+      limit.toString(),
       '-g',
       '60',
-      path.resolve(segmentsPath, '%03d.mp4'),
+      path.resolve(outputPath, '%03d.mp4'),
     ],
   );
-  console.timeEnd('segment-video');
-  return segmentsPath;
+  console.timeEnd(tag);
+  return outputPath;
 }

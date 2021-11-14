@@ -13,7 +13,7 @@ type File implements Node {
   mimetype: String!
   encoding: String!
   status: FileStatus!
-  url: String!
+  url: String
 }
 
 type UploadFileResponse {

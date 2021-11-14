@@ -14,10 +14,10 @@ export type File = {
   mimetype: string,
   encoding: string,
   status: FileStatus,
-  url: string
+  url?: string
 };
 
-type FileDocument = Document & File;
+export type FileDocument = Document & File;
 
 const schema = new Schema({
   _id: {
