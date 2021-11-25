@@ -1,11 +1,7 @@
 import KoaRouter from '@koa/router';
 import fs from 'fs';
-import path from 'path';
 import mime from 'mime-types';
 import { Context } from '../types';
-import { FileDocument } from '../models/file';
-
-const fileCache: Map<string, FileDocument> = new Map();
 
 export default function (router: KoaRouter) {
   router.get('/bucket/:fileName', async (ctx: Context) => {
@@ -19,6 +15,7 @@ export default function (router: KoaRouter) {
     ctx.body = src;
   });
 
+  /*
   router.get('/file/:id/:fileName', async (ctx: Context) => {
     ctx.status = 200;
     ctx.set('Cache-Control', 'no-store');
@@ -124,4 +121,5 @@ export default function (router: KoaRouter) {
     ctx.response.set('content-type', mimeType as string);
     ctx.body = src;
   });
+  */
 }

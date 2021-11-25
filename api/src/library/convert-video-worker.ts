@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import path from 'path';
+
 import { binPath, convertedVideosPath, execFile } from './constants';
 
 export default async function convertVideo(params: {
@@ -75,25 +76,10 @@ export default async function convertVideo(params: {
   console.timeEnd(`convert-video-${name}-${bitrate}`);
   return output || outputPath;
 }
-/*
-[
-      '-i',
-      input,
-      '-vf',
-      'scale=-2:360,format=yuv420p',
-      '-c:v',
-      'libx264',
-      '-crf',
-      '23',
-      '-preset',
-      'medium',
-      '-c:a',
-      'aac',
-      '-b:a',
-      '128k',
-      '-movflags',
-      '+faststart',
-      '-y',
-      output,
-    ]
-*/
+
+process.on('message', (body: { id: number, message: string }) => {
+  console.log('CHILD got message:', body.message);
+  if (process.send) {
+    process.send(body.id);
+  }
+});

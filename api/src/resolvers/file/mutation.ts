@@ -13,11 +13,13 @@ import { FileStatus } from '../../models/file';
 import { writeFile } from '../../library/write-file';
 import localQueue from '../../library/local-queue';
 import splitVideo from '../../library/split-video';
-import { convertedVideosPath as rootConvertedVideosPath, readdir } from '../../library/constants';
+import { readdir } from '../../library/constants';
 import convertVideo from '../../library/convert-video';
 import mergeVideos from '../../library/merge-videos';
 import packageVideos from '../../library/package-videos';
 import createFolder from '../../library/create-folder';
+import io from '../../library/socket-io';
+import addToIPFSFromFS from '../../library/add-to-ipfs-from-fs';
 
 export default {
   Mutation: {
@@ -57,7 +59,12 @@ export default {
 
       localQueue.add(async () => {
         console.time(`process-video-${id}`);
-        const [splitVideoError, segmentedVideosPath] = await tryToCatch(splitVideo, { input: filePath, id });
+        const totalProcess = 4;
+        let currentProcess = 0;
+        let progress = currentProcess / totalProcess;
+        const [splitVideoError, segmentedVideosPath] = await tryToCatch(
+          splitVideo, { input: filePath, customPath: path.resolve(rootPath, 'segment') },
+        );
         await promisify(rimraf)(filePath);
         if (splitVideoError) {
           await promisify(rimraf)(rootPath);
@@ -67,12 +74,22 @@ export default {
             { status: FileStatus.FAILED },
             { new: true },
           );
+          io.emit('progress', JSON.stringify({
+            id: file.id,
+            progress: -1,
+          }));
           throw splitVideoError;
         }
+        currentProcess = 1;
+        progress = currentProcess / totalProcess;
+        io.emit('progress', JSON.stringify({
+          id: file.id,
+          progress,
+        }));
 
         const [convertVideoError, convertedVideosPath] = await tryToCatch(
           async (inputPath: string) => {
-            const outputPath = path.resolve(rootConvertedVideosPath, id);
+            const outputPath = path.resolve(rootPath, 'convert');
             await createFolder(outputPath);
             const files = await readdir(inputPath);
 
@@ -85,6 +102,15 @@ export default {
             bitratePath = path.resolve(outputPath, '720');
             [error] = await tryToCatch(fs.stat, bitratePath);
             if (error) { await fs.mkdir(bitratePath); }
+
+            const total = files.length;
+            let count = 0;
+
+            io.emit('progress', JSON.stringify({
+              id: file.id,
+              progress: progress + ((count / total) * 0.1),
+              status: FileStatus.CONVERTING,
+            }));
 
             await Bluebird.map(files, async (fileName) => {
               const temp = path.resolve(inputPath, fileName);
@@ -107,6 +133,13 @@ export default {
                   }),
                 ],
               );
+              count += 1;
+
+              io.emit('progress', JSON.stringify({
+                id: file.id,
+                progress: progress + ((count / total) * 0.1),
+                status: FileStatus.CONVERTING,
+              }));
             }, { concurrency: 100 });
             return outputPath;
           }, segmentedVideosPath as string,
@@ -122,7 +155,17 @@ export default {
           throw convertVideoError;
         }
 
-        const [mergeVideosError, mergedVideosResult] = await tryToCatch(mergeVideos, { input: convertedVideosPath as string });
+        currentProcess = 2;
+        progress = currentProcess / totalProcess;
+        io.emit('progress', JSON.stringify({
+          id: file.id,
+          progress,
+        }));
+
+        const [mergeVideosError, mergedVideosResult] = await tryToCatch(mergeVideos, {
+          input: convertedVideosPath as string,
+          customPath: path.resolve(rootPath, 'merge'),
+        });
         await promisify(rimraf)(convertedVideosPath as string);
         if (mergeVideosError) {
           console.warn('merge-video-error');
@@ -135,17 +178,50 @@ export default {
         }
 
         assert(mergedVideosResult);
+        currentProcess = 3;
+        progress = currentProcess / totalProcess;
+        io.emit('progress', JSON.stringify({
+          id: file.id,
+          progress,
+        }));
 
-        const url = await packageVideos({
+        const drm = {
+          id: file.id,
+          key: faker.datatype.uuid().replace(/-/g, ''),
+        };
+
+        console.log('drm', drm);
+
+        const outputDir = await packageVideos({
           input: mergedVideosResult.videos as string[],
           output: rootPath,
+          drm,
         });
         await promisify(rimraf)(mergedVideosResult.path as string);
+
+        const hash = await addToIPFSFromFS(outputDir, id);
+        await promisify(rimraf)(outputDir as string);
+        if (!hash) {
+          await ctx.models.file.findOneAndUpdate(
+            { _id: file.id },
+            { status: FileStatus.FAILED },
+            { new: true },
+          );
+          return;
+        }
+
         await ctx.models.file.findOneAndUpdate(
           { _id: file.id },
-          { status: FileStatus.READY, url },
+          { status: FileStatus.READY, hash },
           { new: true },
         );
+
+        currentProcess = 4;
+        progress = currentProcess / totalProcess;
+        io.emit('progress', JSON.stringify({
+          id: file.id,
+          progress,
+        }));
         console.timeEnd(`process-video-${id}`);
       });
 
@@ -177,12 +253,14 @@ export default {
       },
       ctx: Context,
     ) {
+      /*
       const file = await ctx.models.file.findByIdAndDelete(
         args.id,
       );
       if (file && file.url) {
         await promisify(rimraf)(file.url);
       }
+      */
       await ctx.models.file.findByIdAndDelete(
         args.id,
       );

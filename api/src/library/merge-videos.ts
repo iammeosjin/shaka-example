@@ -3,6 +3,7 @@ import path from 'path';
 import Bluebird from 'bluebird';
 import R from 'ramda';
 import fs, { writeFile } from 'fs/promises';
+import tryToCatch from 'try-to-catch';
 import {
   binPath,
   execFile,
@@ -12,8 +13,12 @@ import {
 } from './constants';
 
 export default async function mergeVideos(params: {
-  input: string
+  input: string,
+  customPath?: string
 }) {
+  const outputPath = params.customPath || mergedVideosPath;
+  const [error] = await tryToCatch(fs.stat, outputPath);
+  if (error) { await fs.mkdir(outputPath); }
   console.time('concat-video');
   const files = await readdir(params.input);
   const contents: Record<string, string> = {};
@@ -32,7 +37,7 @@ export default async function mergeVideos(params: {
   const result = await Bluebird.map(
     R.toPairs(contents),
     async ([key, content]) => {
-      const output = path.resolve(mergedVideosPath, `${key}.mp4`);
+      const output = path.resolve(outputPath, `${key}.mp4`);
       const txt = path.resolve(rootPath, `${key}.txt`);
       await writeFile(txt, content, 'utf-8');
       await execFile(
@@ -57,7 +62,7 @@ export default async function mergeVideos(params: {
   );
   console.timeEnd('concat-video');
   return {
-    path: mergedVideosPath,
+    path: outputPath,
     videos: result,
   };
 }

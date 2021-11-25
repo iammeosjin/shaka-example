@@ -15,6 +15,7 @@ import FileModel from './models/file';
 import * as mongoose from './library/mongoose';
 import routes from './routes';
 import loaders from './loaders';
+import io from './library/socket-io';
 
 let apollo: ApolloServer;
 let server: Server;
@@ -88,7 +89,9 @@ async function start() {
   apollo.applyMiddleware({ app });
   const port = process.env.HTTP_PORT || '3001';
   server = createServer(app.callback());
-  server.listen(port);
+  io.listen(server.listen(port), {
+    path: '/socket',
+  });
   console.log('started at', apollo.graphqlPath, '-', port);
 }
 

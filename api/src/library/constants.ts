@@ -5,6 +5,7 @@ import fs from 'fs';
 
 export const binPath = process.env.BIN_PATH || path.resolve(__dirname, '../bin');
 export const rootPath = path.resolve(__dirname, '../../tmp');
+export const bucketPath = path.resolve(rootPath, 'bucket');
 
 export const segmentsPath = path.resolve(rootPath, 'segments');
 export const convertedVideosPath = path.resolve(rootPath, 'converted-videos');

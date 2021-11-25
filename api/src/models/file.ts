@@ -4,6 +4,7 @@ import faker from 'faker';
 
 export enum FileStatus {
   PROCESSING = 'PROCESSING',
+  CONVERTING = 'CONVERTING',
   READY = 'READY',
   FAILED = 'FAILED'
 }
@@ -14,7 +15,7 @@ export type File = {
   mimetype: string,
   encoding: string,
   status: FileStatus,
-  url?: string
+  hash?: string
 };
 
 export type FileDocument = Document & File;
@@ -36,7 +37,7 @@ const schema = new Schema({
     type: String,
     required: true,
   },
-  url: {
+  hash: {
     type: String,
     default: null,
   },
